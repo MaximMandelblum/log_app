@@ -89,6 +89,6 @@ Apply this Yaml -  fluentd-daemonset-elasticsearch-rbac.yaml
 
 Aplly the configmap - fluentd-configmap-elasticsearch-rbac.yaml
 
-6. access kibana add the index_name fluend-     to see the logs in Kibana .
+6. access kibana add the index_name fluend-ngnix     to see the logs in Kibana .
 
 
