@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluentd-config
+  namespace: elastic-system
+  labels:
+    k8s-app: fluentd-logging
+    version: v1
+    kubernetes.io/cluster-service: "true"
+data:
+  fluent.conf: |
+    #@include systemd.conf
+    @include kubernetes.conf
+    <match **>
+       @type elasticsearch
+       @id out_es
+       @log_level info
+       include_tag_key true
+       host "quickstart-es-http"
+       port "9200"
+       scheme "#{ENV['FLUENT_ELASTICSEARCH_SCHEME'] || 'http'}"
+       ssl_verify "false"
+       user "elastic"
+       password "fqb4qs4dhz4hhvnvpr8lj7z9"
+       reload_connections "#{ENV['FLUENT_ELASTICSEARCH_RELOAD_CONNECTIONS'] || 'true'}"
+       logstash_prefix "#{ENV['FLUENT_ELASTICSEARCH_LOGSTASH_PREFIX'] || 'logstash'}"
+       logstash_format true
+       type_name fluentd
+       index_name fluentd_ngnix
+       <buffer>
+         flush_thread_count "#{ENV['FLUENT_ELASTICSEARCH_BUFFER_FLUSH_THREAD_COUNT'] || '8'}"
+         flush_interval "#{ENV['FLUENT_ELASTICSEARCH_BUFFER_FLUSH_INTERVAL'] || '5s'}"
+         chunk_limit_size "#{ENV['FLUENT_ELASTICSEARCH_BUFFER_CHUNK_LIMIT_SIZE'] || '2M'}"
+         queue_limit_length "#{ENV['FLUENT_ELASTICSEARCH_BUFFER_QUEUE_LIMIT_LENGTH'] || '32'}"
+         retry_max_interval "#{ENV['FLUENT_ELASTICSEARCH_BUFFER_RETRY_MAX_INTERVAL'] || '30'}"
+         retry_forever true
+       </buffer>
+    </match>
+  kubernetes.conf: |
+    <match fluent.**>
+      @type null
+    </match>
+    #Target Logs (ex:nginx)
+    <source>
+      @type tail
+      @id in_tail_container_logs
+      path "/var/log/containers/nginx*.log"
+      pos_file "/var/log/fluentd-nginx.log.pos"
+      tag "kubernetes.*"
+      read_from_head true
+      <parse>
+        @type "json"
+        time_format "%Y-%m-%dT%H:%M:%S.%NZ"
+        time_type string
+      </parse>
+    </source>
